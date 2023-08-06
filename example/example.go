@@ -9,17 +9,17 @@ func main() {
 
 	data := [][]int{
 		{1, 3, 5, 7},
-		{0, 1, 2, 5},
+		{1, 1, 2, 5},
 		{5, 3, 2, 1},
 	}
 
 	opts := heatmap.Options{
-		Width:      350,
-		Height:     200,
+		Width:      500,
+		Height:     350,
 		Background: color.RGBA{0xff, 0xff, 0xff, 0xff},
 	}
 
 	hm := heatmap.New(opts)
 
-	hm.Draw(data)
+	hm.Draw(data, "test.png")
 }
