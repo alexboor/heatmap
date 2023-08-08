@@ -5,6 +5,7 @@ import (
 	"github.com/llgcode/draw2d/draw2dimg"
 	"image"
 	"image/color"
+	"math"
 	"math/bits"
 )
 
@@ -41,8 +42,8 @@ func New(opt Options) *Heatmap {
 		Dest:           dest,
 	}
 
-	gc.SetFillColor(hm.BackgroudColor)
-	gc.SetStrokeColor(color.RGBA{A: 0xff})
+	//gc.SetFillColor(hm.BackgroudColor)
+	//gc.SetStrokeColor(color.RGBA{A: 0xff})
 
 	return hm
 }
@@ -59,14 +60,14 @@ func (hm Heatmap) Draw(data [][]int, path string) error {
 		marginX float64 = 2
 		marginY float64 = 2
 
-		cellWidth  = getCellWidth(float64(hm.Width), float64(hm.PaddingX), marginX, hLen)
-		cellHeight = getCellHeight(float64(hm.Height), float64(hm.PaddingY), marginY, vLen)
+		cellWidth  = cellWidth(float64(hm.Width), float64(hm.PaddingX), marginX, hLen)
+		cellHeight = cellHeight(float64(hm.Height), float64(hm.PaddingY), marginY, vLen)
 	)
 
 	for _, row := range data {
 		x := startX
-		for _, _ = range row {
-			hm.drawCell(x, startY, cellWidth, cellHeight)
+		for _, i := range row {
+			hm.drawCell(x, startY, cellWidth, cellHeight, cellColor(min, max, i))
 			x = x + cellWidth + marginX
 		}
 		startY = startY + cellHeight + marginY
@@ -77,7 +78,9 @@ func (hm Heatmap) Draw(data [][]int, path string) error {
 }
 
 // drawCell draw cell on the canvas started from given top-left corner coordinate
-func (hm Heatmap) drawCell(x float64, y float64, w float64, h float64) {
+func (hm Heatmap) drawCell(x float64, y float64, w float64, h float64, c color.RGBA) {
+	hm.GCtx.SetFillColor(c)
+	hm.GCtx.SetStrokeColor(c)
 	hm.GCtx.SetLineWidth(1)
 	hm.GCtx.BeginPath()
 	hm.GCtx.LineTo(x, y)
@@ -90,13 +93,43 @@ func (hm Heatmap) drawCell(x float64, y float64, w float64, h float64) {
 }
 
 // getCellWidth return width of cell calculated from given
-func getCellWidth(CanvasWidth float64, CanvasPaddingX float64, CellMarginX float64, n int) float64 {
+func cellWidth(CanvasWidth float64, CanvasPaddingX float64, CellMarginX float64, n int) float64 {
 	return (CanvasWidth - (CanvasPaddingX * 2) - ((float64(n) - 1) * CellMarginX)) / float64(n)
 }
 
 // getCellHeight return heigh of the cell calculated based on given parameters
-func getCellHeight(CanvasHeight float64, CanvasPaddingX float64, CellMarginY float64, n int) float64 {
+func cellHeight(CanvasHeight float64, CanvasPaddingX float64, CellMarginY float64, n int) float64 {
 	return (CanvasHeight - (CanvasPaddingX * 2) - ((float64(n) - 1) * CellMarginY)) / float64(n)
+}
+
+// cellColor return calculated color based on the min, max and current values
+//
+//	The default color palette is established using the green - yellow - red color scheme, with green
+//	representing the minimum value and red representing the maximum value. The returned value will be
+//	positioned within the range defined by these two extremums.
+func cellColor(min int, max int, v int) color.RGBA {
+	// min value is green = rgba(0, 255, 0, 0)
+	// middle is yellow = rgba(255, 255, 0, 0) +255 red chan
+	// max is red = rgba(255, 0, 0, 0) - 255 green chan
+	// Than means here we have +255 and then -255 steps for the whole range
+
+	rangeMax := 255 + 255
+	pShift := (100 * v) / int(math.Abs(float64(max))+math.Abs(float64(min)))
+	val := pShift * rangeMax / 100
+
+	var R uint8
+	var G uint8
+
+	switch {
+	case val <= 255:
+		R = uint8(val)
+		G = 255
+	case val > 255:
+		R = 255
+		G = 255 - (uint8(val) - 255)
+	}
+
+	return color.RGBA{R: R, G: G, B: 0, A: 255}
 }
 
 // analyse returns width, height of the given matrix and max and min values

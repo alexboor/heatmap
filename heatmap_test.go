@@ -2,6 +2,7 @@ package heatmap
 
 import (
 	"fmt"
+	"image/color"
 	"testing"
 )
 
@@ -105,6 +106,40 @@ func TestAnalyse(t *testing.T) {
 				t.Errorf("Min value error: got %d, want %d", min, tt.WantMin)
 			}
 
+		})
+	}
+
+}
+
+func TestCellColor(t *testing.T) {
+	tests := []struct {
+		Name string
+		Data []int // min, max, current
+		Want color.RGBA
+	}{
+		{
+			"Minimal 0-10 0",
+			[]int{0, 10, 0},
+			color.RGBA{G: 255, A: 255},
+		},
+		{
+			"Middle 0-10 5",
+			[]int{0, 10, 5},
+			color.RGBA{G: 255, R: 255, A: 255},
+		},
+		{
+			"Maximal 0-10 10",
+			[]int{0, 10, 10},
+			color.RGBA{R: 255, A: 255},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			res := cellColor(tt.Data[0], tt.Data[1], tt.Data[2])
+			if res != tt.Want {
+				t.Errorf("want %v, given %v", tt.Want, res)
+			}
 		})
 	}
 
