@@ -12,24 +12,24 @@ import (
 type Heatmap struct {
 	Title          string
 	BackgroudColor color.RGBA
-	Width          int
-	Height         int
-	PaddingX       int
-	PaddingY       int
+	Width          float64
+	Height         float64
+	PaddingX       float64
+	PaddingY       float64
 	GCtx           *draw2dimg.GraphicContext
 	Dest           *image.RGBA
 }
 
 type Options struct {
-	Width      int
-	Height     int
+	Width      float64
+	Height     float64
 	Background color.RGBA
 }
 
 // New create new heatmap instance
 // TODO: polish it
 func New(opt Options) *Heatmap {
-	dest := image.NewRGBA(image.Rect(0, 0, opt.Width, opt.Height))
+	dest := image.NewRGBA(image.Rect(0, 0, int(opt.Width), int(opt.Height)))
 	gc := draw2dimg.NewGraphicContext(dest)
 
 	hm := &Heatmap{
@@ -64,6 +64,8 @@ func (hm Heatmap) Draw(data [][]int, path string) error {
 		cellHeight = cellHeight(float64(hm.Height), float64(hm.PaddingY), marginY, vLen)
 	)
 
+	hm.drawBackgroud()
+
 	for _, row := range data {
 		x := startX
 		for _, i := range row {
@@ -75,6 +77,19 @@ func (hm Heatmap) Draw(data [][]int, path string) error {
 
 	draw2dimg.SaveToPngFile(path, hm.Dest)
 	return nil
+}
+
+func (hm Heatmap) drawBackgroud() {
+	hm.GCtx.SetFillColor(hm.BackgroudColor)
+	hm.GCtx.SetStrokeColor(hm.BackgroudColor)
+	hm.GCtx.BeginPath()
+	hm.GCtx.LineTo(0, 0)
+	hm.GCtx.LineTo(hm.Width, 0)
+	hm.GCtx.LineTo(hm.Width, hm.Height)
+	hm.GCtx.LineTo(0, hm.Height)
+	hm.GCtx.LineTo(0, 0)
+	hm.GCtx.FillStroke()
+	return
 }
 
 // drawCell draw cell on the canvas started from given top-left corner coordinate
